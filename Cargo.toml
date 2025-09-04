@@ -1,0 +1,13 @@
+[package]
+name = "slhdsa-c-rs"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72.1"
+cc = "1.2.35"
+glob = "0.3.3"
+
+[workspace]
