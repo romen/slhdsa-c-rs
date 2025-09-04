@@ -1,67 +1,13 @@
-pub(crate) mod common {
-    pub(crate) type OurError = anyhow::Error;
-    pub(crate) type OurResult<T> = anyhow::Result<T>;
+mod common;
+mod helpers;
+mod parameter_sets;
 
-    //#[cfg(feature = "env_logger")]
-    fn inner_try_init_logging() -> OurResult<()> {
-        env_logger::Builder::from_default_env()
-            //.filter_level(log::LevelFilter::Debug)
-            //.format_timestamp(None) // Optional: disable timestamps
-            .format_module_path(true) // Optional: disable module path
-            .format_target(true) // Optional: enable target
-            .format_source_path(true)
-            .is_test(cfg!(test))
-            .try_init()
-            .map_err(OurError::from)
-    }
+use parameter_sets::*;
+use slhdsa_c_rs::bindings;
 
-    fn try_init_logging() -> OurResult<()> {
-        use std::sync::Once;
-        static INIT: Once = Once::new();
-
-        INIT.call_once(|| {
-            //#[cfg(feature = "env_logger")]
-            inner_try_init_logging().expect("Failed to initialize the logging system");
-        });
-
-        Ok(())
-    }
-
-    pub(crate) fn setup() -> OurResult<()> {
-        try_init_logging().expect("Failed to initialize the logging system");
-        Ok(())
-    }
-}
-
-mod helpers {
-    use rand::{Rng, SeedableRng};
-
-    pub unsafe extern "C" fn randombytes(x: *mut u8, xlen: usize) -> ::core::ffi::c_int {
-        const SUCCESS: ::core::ffi::c_int = 0;
-
-        let x = {
-            let nonnull_pointer = core::ptr::NonNull::new(x).unwrap();
-            let mut x = core::ptr::NonNull::slice_from_raw_parts(nonnull_pointer, xlen);
-            let x = unsafe { x.as_mut() };
-            x
-        };
-
-        let mut rng = rand::rngs::StdRng::from_os_rng();
-
-        rng.fill(x);
-
-        SUCCESS
-    }
-}
-
-#[test]
-fn basic_bindings_test() {
-    use slhdsa_c_rs::bindings;
-
-    common::setup().expect("Failed during initial setup");
-
+fn test_sign_verify<P: ParameterSet>() {
     unsafe {
-        let prm = &bindings::slh_dsa_shake_256s;
+        let prm = P::ptr();
 
         let id = bindings::slh_alg_id(std::ptr::from_ref(prm));
         let id = core::ffi::CStr::from_ptr(id)
@@ -161,3 +107,32 @@ fn basic_bindings_test() {
         }
     }
 }
+
+macro_rules! gen_basic_binding_tests {
+    ( $( $ty:ident ),+ $(,)? ) => {
+        $(
+            paste::paste! {
+                #[test]
+                fn [<basic_bindings_test_ $ty:lower>]() {
+                    common::setup().expect("Failed during initial setup");
+                    test_sign_verify::<$ty>();
+                }
+            }
+        )+
+    };
+}
+
+gen_basic_binding_tests!(
+    SLH_DSA_SHAKE_128s,
+    SLH_DSA_SHAKE_128f,
+    SLH_DSA_SHAKE_192s,
+    SLH_DSA_SHAKE_192f,
+    SLH_DSA_SHAKE_256s,
+    SLH_DSA_SHAKE_256f,
+    SLH_DSA_SHA2_128s,
+    SLH_DSA_SHA2_128f,
+    SLH_DSA_SHA2_192s,
+    SLH_DSA_SHA2_192f,
+    SLH_DSA_SHA2_256s,
+    SLH_DSA_SHA2_256f,
+);
