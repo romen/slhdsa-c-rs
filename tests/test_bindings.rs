@@ -5,7 +5,7 @@ mod parameter_sets;
 use parameter_sets::*;
 use slhdsa_c_rs::ffi;
 
-fn test_sign_verify<P: ParameterSet>() {
+fn test_ffi_sign_verify<P: ParameterSet>() {
     unsafe {
         let prm = P::ptr();
 
@@ -32,6 +32,8 @@ fn test_sign_verify<P: ParameterSet>() {
 
         log::info!("sk={:x?}", sk);
         log::info!("pk={:x?}", pk);
+
+        assert_eq!(&sk[sk.len() - pk_sz..], &pk);
 
         let msg: &[u8] = &[1, 2, 3, 4, 5];
         log::info!("msg={:?}", msg);
@@ -115,7 +117,7 @@ macro_rules! gen_basic_binding_tests {
                 #[test]
                 fn [<basic_bindings_test_ $ty:lower>]() {
                     common::setup().expect("Failed during initial setup");
-                    test_sign_verify::<$ty>();
+                    test_ffi_sign_verify::<$ty>();
                 }
             }
         )+
