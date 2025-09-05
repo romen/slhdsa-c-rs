@@ -22,7 +22,18 @@
 //! like EdDSA, ranging from over 7KB for the smallest parameter set to
 //! nearly 50KB at the largest
 //!
-//! Currently this crate only provides FFI bindings.
+//! Raw FFI bindings are available in the `ffi` module of this crate,
+//! but we also _optionally_ provide a safe Rust wrapper based on
+//! [RustCrypto] traits to facilitate its adoption in Rust projects.
 //!
+//! [RustCrypto]: https://github.com/RustCrypto
+//!
+#![cfg_attr(feature = "wrapper", doc = include_str!("../docs/wrapper.md"))]
+#![cfg_attr(not(feature = "wrapper"), doc = include_str!("../docs/ffi_only.md"))]
 
 pub mod ffi;
+
+#[cfg(feature = "wrapper")]
+mod wrapper;
+#[cfg(feature = "wrapper")]
+pub use wrapper::*;

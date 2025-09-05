@@ -7,6 +7,10 @@ license = "ISC OR MIT OR Apache-2.0"
 repository = "https://github.com/romen/slhdsa-c-rs"
 readme = "README.md"
 
+[features]
+wrapper = []
+default = ["wrapper"]
+
 [dependencies]
 
 [build-dependencies]
