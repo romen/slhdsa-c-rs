@@ -1,7 +1,7 @@
-use slhdsa_c_rs::bindings;
+use slhdsa_c_rs::ffi;
 
 pub(crate) trait ParameterSet {
-    fn ptr() -> &'static bindings::slh_param_s;
+    fn ptr() -> &'static ffi::slh_param_s;
 }
 
 macro_rules! define_param_set {
@@ -11,8 +11,8 @@ macro_rules! define_param_set {
             pub(crate) struct $name;
 
             impl ParameterSet for $name {
-                fn ptr() -> &'static bindings::slh_param_s {
-                    unsafe { &bindings::$binding }
+                fn ptr() -> &'static ffi::slh_param_s {
+                    unsafe { &ffi::$binding }
                 }
             }
         )+

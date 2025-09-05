@@ -3,23 +3,23 @@ mod helpers;
 mod parameter_sets;
 
 use parameter_sets::*;
-use slhdsa_c_rs::bindings;
+use slhdsa_c_rs::ffi;
 
 fn test_sign_verify<P: ParameterSet>() {
     unsafe {
         let prm = P::ptr();
 
-        let id = bindings::slh_alg_id(std::ptr::from_ref(prm));
+        let id = ffi::slh_alg_id(std::ptr::from_ref(prm));
         let id = core::ffi::CStr::from_ptr(id)
             .to_str()
             .expect("Invalid CStr");
         log::info!("id={:?}", id);
 
-        let sk_sz = bindings::slh_sk_sz(std::ptr::from_ref(prm));
+        let sk_sz = ffi::slh_sk_sz(std::ptr::from_ref(prm));
         log::info!("sk_sz={:?}", sk_sz);
-        let pk_sz = bindings::slh_pk_sz(std::ptr::from_ref(prm));
+        let pk_sz = ffi::slh_pk_sz(std::ptr::from_ref(prm));
         log::info!("pk_sz={:?}", pk_sz);
-        let sig_sz = bindings::slh_sig_sz(std::ptr::from_ref(prm));
+        let sig_sz = ffi::slh_sig_sz(std::ptr::from_ref(prm));
         log::info!("sig_sz={:?}", sig_sz);
 
         let mut sk: Vec<u8> = vec![0; sk_sz];
@@ -27,7 +27,7 @@ fn test_sign_verify<P: ParameterSet>() {
 
         let rbg = helpers::randombytes;
 
-        let ret = bindings::slh_keygen(sk.as_mut_ptr(), pk.as_mut_ptr(), Some(rbg), prm);
+        let ret = ffi::slh_keygen(sk.as_mut_ptr(), pk.as_mut_ptr(), Some(rbg), prm);
         assert_eq!(ret, 0);
 
         log::info!("sk={:x?}", sk);
@@ -42,7 +42,7 @@ fn test_sign_verify<P: ParameterSet>() {
         let mut sig: Vec<u8> = vec![0; sig_sz];
         let addrnd = ::core::ptr::null();
 
-        let ret = bindings::slh_sign(
+        let ret = ffi::slh_sign(
             sig.as_mut_ptr(),
             msg.as_ptr(),
             msg.len(),
@@ -55,7 +55,7 @@ fn test_sign_verify<P: ParameterSet>() {
         assert_eq!(ret, sig_sz);
         log::debug!("sig={:x?}", sig);
 
-        let ret = bindings::slh_verify(
+        let ret = ffi::slh_verify(
             msg.as_ptr(),
             msg.len(),
             sig.as_ptr(),
@@ -71,7 +71,7 @@ fn test_sign_verify<P: ParameterSet>() {
         {
             let msg: &[u8] = &[1, 2, 3, 4, 5, 6];
 
-            let ret = bindings::slh_verify(
+            let ret = ffi::slh_verify(
                 msg.as_ptr(),
                 msg.len(),
                 sig.as_ptr(),
@@ -89,10 +89,10 @@ fn test_sign_verify<P: ParameterSet>() {
             let mut sk: Vec<u8> = vec![0; sk_sz];
             let mut pk: Vec<u8> = vec![0; pk_sz];
 
-            let ret = bindings::slh_keygen(sk.as_mut_ptr(), pk.as_mut_ptr(), Some(rbg), prm);
+            let ret = ffi::slh_keygen(sk.as_mut_ptr(), pk.as_mut_ptr(), Some(rbg), prm);
             assert_eq!(ret, 0);
 
-            let ret = bindings::slh_verify(
+            let ret = ffi::slh_verify(
                 msg.as_ptr(),
                 msg.len(),
                 sig.as_ptr(),
