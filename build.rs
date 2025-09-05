@@ -60,6 +60,10 @@ fn generate_bindings() {
         }
     }
 
+    // Filter relevant interfaces
+    let builder = builder.allowlist_function("slh_.*")
+        .allowlist_var("slh_.*");
+
     // Generate Rust bindings from the header
     let bindings = builder.generate().expect("Unable to generate bindings");
 
