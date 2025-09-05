@@ -8,10 +8,11 @@ repository = "https://github.com/romen/slhdsa-c-rs"
 readme = "README.md"
 
 [features]
-wrapper = []
+wrapper = ["signature"]
 default = ["wrapper"]
 
 [dependencies]
+signature = { version = "2.2.0", optional = true }
 
 [build-dependencies]
 bindgen = "0.72.1"
