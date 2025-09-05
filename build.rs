@@ -1,6 +1,6 @@
 use glob::glob;
 
-const SLHDSA_C_PATH: &str = &"./slhdsa-c/";
+const SLHDSA_C_PATH: &str = "./slhdsa-c/";
 
 fn compile_c_sources() {
     let include_path = std::path::PathBuf::from(SLHDSA_C_PATH);
@@ -46,7 +46,8 @@ fn generate_bindings() {
     let mut builder = bindgen::Builder::default();
     builder = builder.clang_arg(format!("-I{}", include_path.display()));
 
-    let pattern = include_path.clone().join("*.h");
+    //let pattern = include_path.clone().join("*.h");
+    let pattern = include_path.clone().join("slh_dsa.h");
     let pattern = pattern.to_str().expect("Path not valid UTF-8");
 
     for entry in glob(pattern).expect("Failed to read glob pattern") {
@@ -61,11 +62,16 @@ fn generate_bindings() {
     }
 
     // Filter relevant interfaces
-    let builder = builder.allowlist_function("slh_.*")
-        .allowlist_var("slh_.*");
+    let builder = builder.allowlist_function("slh_.*").allowlist_var("slh_.*");
 
     // Generate Rust bindings from the header
-    let bindings = builder.generate().expect("Unable to generate bindings");
+    let bindings = builder
+        .use_core()
+        .ctypes_prefix("self")
+        .generate_comments(true)
+        .clang_arg("-fparse-all-comments")
+        .generate()
+        .expect("Unable to generate bindings");
 
     // Write bindings to $OUT_DIR/bindings.rs
     let out_path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());

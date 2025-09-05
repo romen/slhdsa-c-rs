@@ -1,7 +1,11 @@
 [package]
+edition = "2021"
 name = "slhdsa-c-rs"
 version = "0.0.1"
-edition = "2021"
+description = "FFI bindings for the `slh-dsa-c` SLH-DSA implementation"
+license = "ISC OR MIT OR Apache-2.0"
+repository = "https://github.com/romen/slhdsa-c-rs"
+readme = "README.md"
 
 [dependencies]
 
