@@ -84,15 +84,21 @@ impl<P: ParameterSet> SigningKey<P> {
         Ok(sk)
     }
 
-    /// Sign `msg` with the associated `ctx` (which can be empty)
+    /// Attempt to use [`Self`] to sign the given `message` bytestring
+    /// under the associated `context` bytestring, returning a digital signature
+    /// on success, or a [`signature::Error`] if something went wrong.
     ///
     /// # Errors
     ///
-    /// Returns a [`signature::Error`] if the underlying FFI signature generation fails.
+    /// The main intended use case for signing errors is when communicating
+    /// with external signers, e.g. cloud KMS, HSMs, or other hardware tokens.
+    ///
+    /// This method returns a [`signature::Error`] if the underlying FFI
+    /// signature generation fails.
     pub fn try_sign_with_ctx(
         &self,
-        msg: &[u8],
-        ctx: &[u8],
+        message: &[u8],
+        context: &[u8],
     ) -> Result<super::Signature<P>, signature::Error> {
         type Siglen<P> = <P as SignatureLen>::LEN;
         let mut sig: GenericArray<u8, Siglen<P>> = GenericArray::default();
@@ -105,10 +111,10 @@ impl<P: ParameterSet> SigningKey<P> {
             unsafe {
                 crate::ffi::slh_sign(
                     sig.as_mut_ptr(),
-                    msg.as_ptr(),
-                    msg.len(),
-                    ctx.as_ptr(),
-                    ctx.len(),
+                    message.as_ptr(),
+                    message.len(),
+                    context.as_ptr(),
+                    context.len(),
                     sk,
                     addrnd,
                     prm,

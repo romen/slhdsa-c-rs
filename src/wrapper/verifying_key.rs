@@ -4,6 +4,7 @@ pub use signature::Verifier;
 use generic_array::GenericArray;
 
 use super::ParameterSet;
+use crate::{ffi::c_int, AsBytes};
 
 /// Public key for signature verification.
 #[derive(Clone, Debug)]
@@ -12,13 +13,43 @@ pub struct VerifyingKey<P: ParameterSet> {
 }
 
 impl<P: ParameterSet> VerifyingKey<P> {
-    fn verify_with_ctx(
+    /// Use [`Self`] to verify that the provided `signature`
+    /// for a given `message` bytestring is authentic
+    /// under the associated `context` bytestring.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`signature::Error`] if it is inauthentic,
+    /// or otherwise returns `()`.
+    pub fn verify_with_ctx(
         &self,
-        msg: &[u8],
-        ctx: &[u8],
+        message: &[u8],
+        context: &[u8],
         signature: &super::Signature<P>,
     ) -> Result<(), signature::Error> {
-        todo!()
+        const SUCCESS: c_int = 1;
+        let ret = {
+            let prm = P::prm_as_ptr();
+            let pk = self.pk.as_ptr();
+            let sig = signature.as_bytes();
+
+            unsafe {
+                crate::ffi::slh_verify(
+                    message.as_ptr(),
+                    message.len(),
+                    sig.as_ptr(),
+                    sig.len(),
+                    context.as_ptr(),
+                    context.len(),
+                    pk,
+                    prm,
+                )
+            }
+        };
+        if ret != SUCCESS {
+            return Err(signature::Error::default());
+        }
+        Ok(())
     }
 }
 
