@@ -9,7 +9,7 @@
 
 //! # Usage
 //!
-//! This crate provides Rust FFI bindings for [`slh-dsa-c`](https://github.com/pq-code-package/slhdsa-c),
+//! This crate provides Rust FFI bindings for [`slhdsa-c`](https://github.com/pq-code-package/slhdsa-c),
 //! a portable C90 implementation of SLH-DSA ("Stateless Hash-Based Digital Signature Standard")
 //! as described in NIST [FIPS 205](https://csrc.nist.gov/pubs/fips/205/final).
 //!
@@ -25,7 +25,7 @@
 //! Currently this crate only provides FFI bindings.
 //!
 
-/// FFI bindings for [`slh-dsa-c`](https://github.com/pq-code-package/slhdsa-c),
+/// FFI bindings for [`slhdsa-c`](https://github.com/pq-code-package/slhdsa-c),
 /// a portable C90 implementation of SLH-DSA ("Stateless Hash-Based Digital Signature Standard")
 /// as described in NIST [FIPS 205](https://csrc.nist.gov/pubs/fips/205/final).
 ///
