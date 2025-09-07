@@ -4,10 +4,12 @@ pub use signature;
 
 use crate::ffi;
 
+pub mod parameter_sets;
 mod signature_encoding;
 mod signing_key;
 mod verifying_key;
 
+pub use parameter_sets::*;
 pub use signature_encoding::*;
 pub use signing_key::*;
 pub use verifying_key::*;
@@ -142,34 +144,6 @@ pub trait ParameterSet:
     //    const ALGORITHM_OID: pkcs8::ObjectIdentifier;
 }
 
-#[allow(non_camel_case_types)]
-#[derive(PartialEq, Eq, Clone, Debug)]
-/// Implements SLH-DSA-SHAKE-128s from as described in NIST [FIPS 205](https://csrc.nist.gov/pubs/fips/205/final).
-pub struct SLH_DSA_SHAKE_128s {}
-
-impl FFIParams for SLH_DSA_SHAKE_128s {
-    fn prm() -> &'static ffi::slh_param_s {
-        unsafe { &ffi::slh_dsa_shake_128s }
-    }
-}
-impl SignatureLen for SLH_DSA_SHAKE_128s {
-    const SIGNATURE_LEN: usize = 7856;
-
-    type LEN = typenum::U7856;
-}
-impl SigningKeyLen for SLH_DSA_SHAKE_128s {
-    const SIGNING_KEY_LEN: usize = 64;
-    type LEN = typenum::U64;
-}
-impl VerifyingKeyLen for SLH_DSA_SHAKE_128s {
-    const VERIFYING_KEY_LEN: usize = 32;
-    type LEN = typenum::U32;
-}
-impl ParameterSet for SLH_DSA_SHAKE_128s {
-    const NAME: &'static str = "SLH-DSA-SHAKE-128s";
-    const ALGORITHM_OID_STR: &'static str = "2.16.840.1.101.3.4.3.26";
-}
-
 #[cfg(test)]
 mod tests {
     #[cfg(test)]
@@ -178,9 +152,7 @@ mod tests {
     use super::*;
     use crate::{SignatureLen, SigningKeyLen, VerifyingKeyLen};
     use typenum::Unsigned;
-    //     use rand::Rng;
-    //     use signature::*;
-    //     use util::macros::test_parameter_sets;
+    use utils::macros::{gen_test, test_parameter_sets};
 
     fn test_sizes<P: ParameterSet>() {
         assert_eq!(P::SIGNATURE_LEN, P::signature_len());
@@ -199,6 +171,7 @@ mod tests {
 
         assert_eq!(P::NAME, P::algorithm_name());
     }
+    test_parameter_sets!(test_sizes);
 
     fn test_sign_verify<P: ParameterSet>() {
         //let mut rng = rand::rng();
@@ -225,9 +198,8 @@ mod tests {
         vk.verify(msg, &sig)
             .expect("verify() should not fail on the happy path");
     }
+    test_parameter_sets!(test_sign_verify);
 
-    //     test_parameter_sets!(test_sign_verify);
-    //
     //     // Check signature fails on modified message
     //     #[test]
     //     fn test_sign_verify_shake_128f_fail_on_modified_message() {
@@ -313,16 +285,4 @@ mod tests {
     //         let sig = sk.try_sign_with_context(msg, ctx, None).unwrap();
     //         assert!(vk.try_verify_with_context(msg, wrong_ctx, &sig).is_err());
     //     }
-
-    #[test]
-    fn test_sizes_slh_dsa_shake_128s() {
-        use SLH_DSA_SHAKE_128s as prmset;
-        test_sizes::<prmset>();
-    }
-
-    #[test]
-    fn test_sign_verify_slh_dsa_shake_128s() {
-        use SLH_DSA_SHAKE_128s as prmset;
-        test_sign_verify::<prmset>();
-    }
 }
