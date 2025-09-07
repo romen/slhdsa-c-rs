@@ -13,6 +13,7 @@ pub use signing_key::*;
 pub use verifying_key::*;
 
 pub(crate) mod utils;
+pub use utils::transcoding::*;
 pub(crate) use utils::typenum;
 
 trait FFIParams {
@@ -211,16 +212,14 @@ mod tests {
         std::println!("{sig:?}");
 
         // Encode the signature into bytes for transfer between Signer and Verifier
-        let sig_raw = sig.to_bytes();
-        let sig_bytes: &[u8] = &sig_raw;
+        let sig_bytes = sig.as_bytes();
         std::println!("{sig_bytes:?}");
         assert_eq!(sig_bytes.len(), <<P as super::SignatureLen>::LEN>::USIZE);
 
         // Now decode the signature from bytes, simulating what the Verifier
         // would do after receiving the signature
-        let recv_sig: Signature<P> = sig_bytes
-            .try_into()
-            .expect("Failed to parse the received signature");
+        let recv_sig =
+            Signature::<P>::from_bytes(sig_bytes).expect("Failed to parse the received signature");
         assert_eq!(recv_sig, sig);
 
         //vk.verify(msg, &sig).unwrap();
