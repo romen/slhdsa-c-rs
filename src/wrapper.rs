@@ -222,7 +222,8 @@ mod tests {
             Signature::<P>::from_bytes(sig_bytes).expect("Failed to parse the received signature");
         assert_eq!(recv_sig, sig);
 
-        //vk.verify(msg, &sig).unwrap();
+        vk.verify(msg, &sig)
+            .expect("verify() should not fail on the happy path");
     }
 
     //     test_parameter_sets!(test_sign_verify);

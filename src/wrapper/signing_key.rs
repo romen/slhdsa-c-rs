@@ -1,5 +1,6 @@
 pub use signature::Keypair;
 pub use signature::Signer;
+pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
 use core::fmt;
 use generic_array::GenericArray;
@@ -28,8 +29,7 @@ impl<P: ParameterSet> Keypair for SigningKey<P> {
 
 impl<P: ParameterSet> signature::Signer<super::Signature<P>> for SigningKey<P> {
     fn try_sign(&self, msg: &[u8]) -> Result<super::Signature<P>, signature::Error> {
-        let ctx = &[];
-        self.try_sign_with_ctx(msg, ctx)
+        self.try_sign_with_ctx(msg, EMPTY_CTX)
     }
 }
 
