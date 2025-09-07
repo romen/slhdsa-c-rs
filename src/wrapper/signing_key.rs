@@ -1,12 +1,15 @@
+pub use signature::Keypair;
+pub use signature::Signer;
+
 use core::fmt;
 use generic_array::GenericArray;
-pub use signature::Keypair;
 
 use super::utils::rand::randombytes;
+use super::utils::typenum::Unsigned;
 use super::{ParameterSet, SignatureLen, SigningKeyLen, VerifyingKeyLen};
 use crate::ffi::c_int;
 
-/// SigningKey holds the secret key material for a given parameter set.
+/// Holds the secret key material for a given parameter set.
 #[derive(Debug)]
 pub struct SigningKey<P: ParameterSet> {
     sk: GenericArray<u8, <P as crate::SigningKeyLen>::LEN>,
@@ -25,7 +28,8 @@ impl<P: ParameterSet> Keypair for SigningKey<P> {
 
 impl<P: ParameterSet> signature::Signer<super::Signature<P>> for SigningKey<P> {
     fn try_sign(&self, msg: &[u8]) -> Result<super::Signature<P>, signature::Error> {
-        todo!()
+        let ctx = &[];
+        self.try_sign_with_ctx(msg, ctx)
     }
 }
 
@@ -39,13 +43,17 @@ pub enum KeygenError {
 impl fmt::Display for KeygenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            KeygenError::FFIError(code) => write!(f, "FFI keygen failed with error code {}", code),
+            KeygenError::FFIError(code) => write!(f, "FFI keygen failed with error code {code:}"),
         }
     }
 }
 
 impl<P: ParameterSet> SigningKey<P> {
     /// Generate an SLH-DSA key pair
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`KeygenError`] if the underlying FFI key generation fails.
     pub fn keygen() -> Result<Self, KeygenError> {
         const SUCCESS: c_int = 0;
 
@@ -74,5 +82,47 @@ impl<P: ParameterSet> SigningKey<P> {
         let sk = Self { sk };
         let _ = pk;
         Ok(sk)
+    }
+
+    /// Sign `msg` with the associated `ctx` (which can be empty)
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`signature::Error`] if the underlying FFI signature generation fails.
+    pub fn try_sign_with_ctx(
+        &self,
+        msg: &[u8],
+        ctx: &[u8],
+    ) -> Result<super::Signature<P>, signature::Error> {
+        type Siglen<P> = <P as SignatureLen>::LEN;
+        let mut sig: GenericArray<u8, Siglen<P>> = GenericArray::default();
+
+        let ret: usize = {
+            let prm = P::prm_as_ptr();
+            let sk = self.sk.as_ptr();
+            let addrnd = ::core::ptr::null();
+
+            unsafe {
+                crate::ffi::slh_sign(
+                    sig.as_mut_ptr(),
+                    msg.as_ptr(),
+                    msg.len(),
+                    ctx.as_ptr(),
+                    ctx.len(),
+                    sk,
+                    addrnd,
+                    prm,
+                )
+            }
+        };
+        if ret != <Siglen<P>>::USIZE {
+            return Err(signature::Error::new());
+        }
+
+        // SAFETY: We assume slh_sign fully initialized all bytes of the
+        // array, if it returned the expected siglen.
+        let s = super::Signature::<P> { sig };
+
+        Ok(s)
     }
 }

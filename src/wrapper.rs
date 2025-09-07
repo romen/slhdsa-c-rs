@@ -1,3 +1,5 @@
+#![allow(clippy::must_use_candidate)]
+
 pub use signature;
 
 use crate::ffi;
@@ -10,8 +12,8 @@ pub use signature_encoding::*;
 pub use signing_key::*;
 pub use verifying_key::*;
 
-pub(crate) mod typenum;
 pub(crate) mod utils;
+pub(crate) use utils::typenum;
 
 trait FFIParams {
     /// Returns a static reference to the FFI struct representing this parameter set.
@@ -124,12 +126,12 @@ pub trait ParameterSet:
     fn algorithm_name() -> &'static str {
         let prm = Self::prm_as_ptr();
         let name = unsafe { ffi::slh_alg_id(prm) };
-        let name = core::ptr::NonNull::new(name as *mut i8).expect("Expected a non-NULL pointer");
+        let name = core::ptr::NonNull::new(name.cast_mut()).expect("Expected a non-NULL pointer");
         let name = unsafe { core::ffi::CStr::from_ptr(name.as_ptr()) };
 
         let name = name.to_str().expect("Invalid UTF-8");
         debug_assert_eq!(name, Self::NAME);
-        return name;
+        name
     }
 
     /// Associated OID with the Parameter as a `&str`
@@ -197,12 +199,6 @@ mod tests {
         assert_eq!(P::NAME, P::algorithm_name());
     }
 
-    #[test]
-    fn test_sizes_slh_dsa_shake_128s() {
-        use SLH_DSA_SHAKE_128s as prmset;
-        test_sizes::<prmset>();
-    }
-
     fn test_sign_verify<P: ParameterSet>() {
         //let mut rng = rand::rng();
         //let sk = SigningKey::<P>::new(&mut rng);
@@ -210,16 +206,12 @@ mod tests {
         std::println!("{sk:?}");
         let vk = sk.verifying_key();
         std::println!("{vk:?}");
-        //let msg = b"Hello, world!";
-        //let sig = sk.try_sign(msg).unwrap();
+        let msg = b"Hello, world!";
+        let sig = sk.sign(msg);
+        std::println!("{sig:?}");
         //vk.verify(msg, &sig).unwrap();
     }
 
-    #[test]
-    fn test_sign_verify_slh_dsa_shake_128s() {
-        use SLH_DSA_SHAKE_128s as prmset;
-        test_sign_verify::<prmset>();
-    }
     //     test_parameter_sets!(test_sign_verify);
     //
     //     // Check signature fails on modified message
@@ -307,4 +299,16 @@ mod tests {
     //         let sig = sk.try_sign_with_context(msg, ctx, None).unwrap();
     //         assert!(vk.try_verify_with_context(msg, wrong_ctx, &sig).is_err());
     //     }
+
+    #[test]
+    fn test_sizes_slh_dsa_shake_128s() {
+        use SLH_DSA_SHAKE_128s as prmset;
+        test_sizes::<prmset>();
+    }
+
+    #[test]
+    fn test_sign_verify_slh_dsa_shake_128s() {
+        use SLH_DSA_SHAKE_128s as prmset;
+        test_sign_verify::<prmset>();
+    }
 }
