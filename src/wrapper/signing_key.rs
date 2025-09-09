@@ -1,4 +1,5 @@
 pub use signature::Keypair;
+pub use signature::KeypairRef;
 pub use signature::Signer;
 pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
@@ -10,21 +11,64 @@ use super::utils::transcoding;
 use super::utils::typenum::Unsigned;
 use super::{ParameterSet, SignatureLen, SigningKeyLen, VerifyingKeyLen};
 use crate::ffi::c_int;
+use transcoding::AsBytes;
 
 /// Holds the secret key material for a given parameter set.
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct SigningKey<P: ParameterSet> {
-    sk: GenericArray<u8, <P as crate::SigningKeyLen>::LEN>,
+    pub(super) sk: GenericArray<u8, <P as crate::SigningKeyLen>::LEN>,
 }
 
-impl<P: ParameterSet> Keypair for SigningKey<P> {
+/// For convenience, a `SigningKey<P>` can be used also as a
+/// corresponding `&VerifyingKey<P>`, using zero-cost abstractions.
+///
+/// # Usage
+///
+/// ```rust
+/// # use slhdsa_c_rs::*;
+/// # use SLH_DSA_SHAKE_128s as P;
+/// # let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+/// # let msg: &[u8] = b"Hello, world!";
+/// # let sig = sk.sign(msg);
+/// let sk: &SigningKey<P> = &sk;
+/// let vk: &VerifyingKey<P> = sk.as_ref();
+/// assert_eq!(vk.as_bytes().len(), P::VERIFYING_KEY_LEN);
+///
+/// assert!(vk.verify(&msg, &sig).is_ok())
+/// ```
+impl<P: ParameterSet> KeypairRef for SigningKey<P> {
     type VerifyingKey = super::verifying_key::VerifyingKey<P>;
+}
 
-    fn verifying_key(&self) -> Self::VerifyingKey {
-        let sk = self.sk.as_slice();
-        let pk = &sk[sk.len() - P::VERIFYING_KEY_LEN..];
-        let pk = GenericArray::from_slice(pk).clone();
-        Self::VerifyingKey { pk }
+/// For convenience, a `SigningKey<P>` can be used also as a
+/// corresponding `&VerifyingKey<P>`, using zero-cost abstractions.
+///
+/// # Usage
+///
+/// ```rust
+/// # use slhdsa_c_rs::*;
+/// # use SLH_DSA_SHAKE_128s as P;
+/// # let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+/// # let msg: &[u8] = b"Hello, world!";
+/// # let sig = sk.sign(msg);
+/// let sk: &SigningKey<P> = &sk;
+/// let vk: &VerifyingKey<P> = sk.as_ref();
+/// assert_eq!(vk.as_bytes().len(), P::VERIFYING_KEY_LEN);
+///
+/// assert!(vk.verify(&msg, &sig).is_ok())
+/// ```
+impl<P: ParameterSet> AsRef<super::verifying_key::VerifyingKey<P>> for SigningKey<P> {
+    fn as_ref(&self) -> &super::verifying_key::VerifyingKey<P> {
+        let sk = self.as_bytes();
+        let pk_start = sk.len() - P::VERIFYING_KEY_LEN;
+        let pk = &sk[pk_start..];
+        let pk: &GenericArray<u8, <P as crate::VerifyingKeyLen>::LEN> =
+            GenericArray::from_slice(pk);
+
+        // SAFETY: this subslice is guaranteed to be a valid pk by construction,
+        // and VerifyingKey is #[repr(transparent)]
+        unsafe { super::verifying_key::vk_from_inner(pk) }
     }
 }
 

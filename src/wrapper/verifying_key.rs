@@ -10,6 +10,7 @@ use transcoding::AsBytes;
 
 /// Public key for signature verification.
 #[derive(Clone, Debug)]
+#[repr(transparent)]
 pub struct VerifyingKey<P: ParameterSet> {
     pub(super) pk: GenericArray<u8, <P as crate::VerifyingKeyLen>::LEN>,
 }
@@ -85,4 +86,23 @@ impl<P: ParameterSet> AsRef<[u8]> for VerifyingKey<P> {
     fn as_ref(&self) -> &[u8] {
         self.pk.as_ref()
     }
+}
+
+/// Single unsafe helper for internal use to cast a `GenericArray` of the
+/// right size into a `VerifyingKey` reference.
+///
+/// ## Safety
+///
+/// Callers should ensure the underlying bytes represent a valid public key.
+///
+/// This should be used only for internal zero-cost abstractions, relying on the
+/// fact that `VeryfingKey` is `#[repr(transparent)]`
+#[inline]
+pub(super) unsafe fn vk_from_inner<P: ParameterSet>(
+    inner: &GenericArray<u8, <P as crate::VerifyingKeyLen>::LEN>,
+) -> &VerifyingKey<P> {
+    debug_assert_eq!(inner.len(), P::VERIFYING_KEY_LEN);
+    let ptr = inner.as_ptr();
+    let ptr = ptr.cast::<super::verifying_key::VerifyingKey<P>>();
+    &*(ptr)
 }
