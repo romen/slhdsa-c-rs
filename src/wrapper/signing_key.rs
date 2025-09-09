@@ -19,6 +19,7 @@ pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
 // Derive Debug only when building tests or with debug assertions (i.e., non-release)
 #[cfg_attr(any(test, debug_assertions), derive(Debug))]
+#[derive(Clone, PartialEq)]
 #[repr(transparent)]
 /// Holds the secret key material for a given parameter set.
 pub struct SigningKey<P: ParameterSet> {

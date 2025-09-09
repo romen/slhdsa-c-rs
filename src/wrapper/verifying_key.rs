@@ -9,7 +9,7 @@ use crate::{ffi::c_int, utils::transcoding};
 use transcoding::AsBytes;
 
 /// Public key for signature verification.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 #[repr(transparent)]
 pub struct VerifyingKey<P: ParameterSet> {
     pub(super) pk: GenericArray<u8, <P as crate::VerifyingKeyLen>::LEN>,
