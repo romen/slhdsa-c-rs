@@ -1,17 +1,21 @@
 pub use signature::Keypair;
 pub use signature::KeypairRef;
 pub use signature::Signer;
-pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
 use core::fmt;
 use generic_array::GenericArray;
 
-use super::utils::rand::randombytes;
-use super::utils::transcoding;
-use super::utils::typenum::Unsigned;
+use super::utils;
+use super::VerifyingKey;
 use super::{ParameterSet, SignatureLen, SigningKeyLen, VerifyingKeyLen};
-use crate::ffi::c_int;
+use crate::ffi;
+use ffi::c_int;
 use transcoding::AsBytes;
+use utils::rand::randombytes;
+use utils::transcoding;
+use utils::typenum::Unsigned;
+
+pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
 /// Holds the secret key material for a given parameter set.
 #[derive(Debug)]
@@ -28,7 +32,7 @@ pub struct SigningKey<P: ParameterSet> {
 /// ```rust
 /// # use slhdsa_c_rs::*;
 /// # use SLH_DSA_SHAKE_128s as P;
-/// # let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+/// # let sk = SigningKey::<P>::new().expect("Keygen failed");
 /// # let msg: &[u8] = b"Hello, world!";
 /// # let sig = sk.sign(msg);
 /// let sk: &SigningKey<P> = &sk;
@@ -49,7 +53,7 @@ impl<P: ParameterSet> KeypairRef for SigningKey<P> {
 /// ```rust
 /// # use slhdsa_c_rs::*;
 /// # use SLH_DSA_SHAKE_128s as P;
-/// # let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+/// # let sk = SigningKey::<P>::new().expect("Keygen failed");
 /// # let msg: &[u8] = b"Hello, world!";
 /// # let sig = sk.sign(msg);
 /// let sk: &SigningKey<P> = &sk;
@@ -78,7 +82,7 @@ impl<P: ParameterSet> signature::Signer<super::Signature<P>> for SigningKey<P> {
     }
 }
 
-/// Errors that can occur during SLH key generation.
+/// Errors that can occur during SLH-DSA key generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeygenError {
     /// The FFI function returned a non-zero status code.
@@ -93,39 +97,77 @@ impl fmt::Display for KeygenError {
     }
 }
 
+/// Generate an new SLH-DSA keypair
+///
+/// # Errors
+///
+/// Returns a [`KeygenError`] if the underlying FFI key generation fails.
+///
+/// # Usage
+///
+/// ```rust
+/// # use slhdsa_c_rs::*;
+/// use slhdsa_c_rs::SLH_DSA_SHAKE_128s as P;
+///
+/// let (private_key, public_key) = keygen::<P>().expect("Keygen failed");
+///
+/// assert_eq!(private_key.as_bytes().len(), P::SIGNING_KEY_LEN);
+/// assert_eq!(public_key.as_bytes().len(), P::VERIFYING_KEY_LEN);
+/// ```
+pub fn keygen<P: ParameterSet>() -> Result<(SigningKey<P>, VerifyingKey<P>), KeygenError> {
+    const SUCCESS: c_int = 0;
+
+    let mut sk: GenericArray<u8, <P as SigningKeyLen>::LEN> = GenericArray::default();
+    let mut pk: GenericArray<u8, <P as VerifyingKeyLen>::LEN> = GenericArray::default();
+
+    let ret: c_int = {
+        let prm = P::prm_as_ptr();
+
+        let sk_slice = sk.as_mut_slice();
+        let pk_slice = pk.as_mut_slice();
+
+        let sk = sk_slice.as_mut_ptr();
+        let pk = pk_slice.as_mut_ptr();
+
+        unsafe { crate::ffi::slh_keygen(sk, pk, Some(randombytes), prm) }
+    };
+
+    match ret {
+        SUCCESS => (),
+        x => return Err(KeygenError::FFIError(x)),
+    }
+
+    // SAFETY: We assume slh_keygen fully initialized all bytes of the
+    // array, if it returned 0.
+    let sk = SigningKey::<P> { sk };
+    let pk = VerifyingKey::<P> { pk };
+
+    Ok((sk, pk))
+}
+
 impl<P: ParameterSet> SigningKey<P> {
-    /// Generate an SLH-DSA key pair
+    /// Generate an new SLH-DSA `SigningKey`
+    ///
+    /// If you want the full keypair consider using `keygen::<P>()`.
     ///
     /// # Errors
     ///
     /// Returns a [`KeygenError`] if the underlying FFI key generation fails.
-    pub fn keygen() -> Result<Self, KeygenError> {
-        const SUCCESS: c_int = 0;
-
-        let mut sk: GenericArray<u8, <P as SigningKeyLen>::LEN> = GenericArray::default();
-        let mut pk: GenericArray<u8, <P as VerifyingKeyLen>::LEN> = GenericArray::default();
-
-        let ret: c_int = {
-            let prm = P::prm_as_ptr();
-
-            let sk_slice = sk.as_mut_slice();
-            let pk_slice = pk.as_mut_slice();
-
-            let sk = sk_slice.as_mut_ptr();
-            let pk = pk_slice.as_mut_ptr();
-
-            unsafe { crate::ffi::slh_keygen(sk, pk, Some(randombytes), prm) }
-        };
-
-        match ret {
-            SUCCESS => (),
-            x => return Err(KeygenError::FFIError(x)),
-        }
-
-        // SAFETY: We assume slh_keygen fully initialized all bytes of the
-        // array, if it returned 0.
-        let sk = Self { sk };
-        let _ = pk;
+    ///
+    /// # Usage
+    ///
+    /// ```rust
+    /// # use slhdsa_c_rs::*;
+    /// # use SLH_DSA_SHAKE_128s as P;
+    /// let sk = SigningKey::<P>::new().expect("Keygen failed");
+    /// assert_eq!(sk.as_bytes().len(), P::SIGNING_KEY_LEN);
+    ///
+    /// let msg: &[u8] = b"Hello, world!";
+    /// let sig = sk.sign(msg);
+    /// assert_eq!(sig.as_bytes().len(), P::SIGNATURE_LEN);
+    /// ```
+    pub fn new() -> Result<Self, KeygenError> {
+        let (sk, _) = super::keygen::<P>()?;
         Ok(sk)
     }
 

@@ -11,6 +11,7 @@ mod verifying_key;
 
 pub use parameter_sets::*;
 pub use signature_encoding::*;
+pub use signing_key::keygen;
 pub use signing_key::*;
 pub use verifying_key::*;
 
@@ -176,7 +177,7 @@ mod tests {
     fn test_sign_verify<P: ParameterSet>() {
         //let mut rng = rand::rng();
         //let sk = SigningKey::<P>::new(&mut rng);
-        let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+        let sk = SigningKey::<P>::new().expect("Keygen failed");
         std::println!("{sk:?}");
         let vk = sk.verifying_key();
         std::println!("{vk:?}");

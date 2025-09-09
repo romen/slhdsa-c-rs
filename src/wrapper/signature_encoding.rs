@@ -13,7 +13,7 @@ use super::ParameterSet;
 /// # use slhdsa_c_rs::*;
 /// # use SLH_DSA_SHAKE_128s as P;
 /// #
-/// # let sk = SigningKey::<P>::keygen().expect("Keygen failed");
+/// # let sk = SigningKey::<P>::new().expect("Keygen failed");
 /// let msg: &[u8] = b"Hello, world!";
 ///
 /// let signature = sk.sign(msg);
