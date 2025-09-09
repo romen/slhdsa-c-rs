@@ -1,6 +1,11 @@
 //! This module defines the concrete parameter sets for the SLH-DSA standard
 
-pub use pure_slhdsa::*;
+pub(super) mod all {
+    pub use super::pure_slhdsa::sha2_based::*;
+    pub use super::pure_slhdsa::shake_based::*;
+}
+
+pub use all::*;
 
 /// This module defines concrete parameter sets for Pure SLH-DSA schemes
 pub mod pure_slhdsa {

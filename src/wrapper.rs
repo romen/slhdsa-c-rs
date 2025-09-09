@@ -9,7 +9,7 @@ mod signature_encoding;
 mod signing_key;
 mod verifying_key;
 
-pub use parameter_sets::*;
+pub use parameter_sets::all::*;
 pub use signature_encoding::*;
 pub use signing_key::keygen;
 pub use signing_key::*;
