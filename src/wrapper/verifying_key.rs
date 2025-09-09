@@ -1,10 +1,12 @@
 pub(super) use super::signing_key::EMPTY_CTX;
 pub use signature::Verifier;
 
+use super::utils::typenum::Unsigned;
 use generic_array::GenericArray;
 
 use super::ParameterSet;
-use crate::{ffi::c_int, AsBytes};
+use crate::{ffi::c_int, utils::transcoding};
+use transcoding::AsBytes;
 
 /// Public key for signature verification.
 #[derive(Clone, Debug)]
@@ -56,5 +58,31 @@ impl<P: ParameterSet> VerifyingKey<P> {
 impl<P: ParameterSet> signature::Verifier<super::Signature<P>> for VerifyingKey<P> {
     fn verify(&self, msg: &[u8], signature: &super::Signature<P>) -> Result<(), signature::Error> {
         self.verify_with_ctx(msg, EMPTY_CTX, signature)
+    }
+}
+
+impl<P: ParameterSet> From<VerifyingKey<P>>
+    for GenericArray<u8, <P as crate::VerifyingKeyLen>::LEN>
+{
+    fn from(vk: VerifyingKey<P>) -> Self {
+        vk.pk
+    }
+}
+
+impl<P: ParameterSet> TryFrom<&[u8]> for VerifyingKey<P> {
+    type Error = transcoding::TranscodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != <<P as crate::VerifyingKeyLen>::LEN>::USIZE {
+            return Err(transcoding::TranscodingError {});
+        }
+        let arr = GenericArray::from_slice(bytes).clone();
+        Ok(Self { pk: arr })
+    }
+}
+
+impl<P: ParameterSet> AsRef<[u8]> for VerifyingKey<P> {
+    fn as_ref(&self) -> &[u8] {
+        self.pk.as_ref()
     }
 }

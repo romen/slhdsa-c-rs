@@ -6,6 +6,7 @@ use core::fmt;
 use generic_array::GenericArray;
 
 use super::utils::rand::randombytes;
+use super::utils::transcoding;
 use super::utils::typenum::Unsigned;
 use super::{ParameterSet, SignatureLen, SigningKeyLen, VerifyingKeyLen};
 use crate::ffi::c_int;
@@ -17,7 +18,7 @@ pub struct SigningKey<P: ParameterSet> {
 }
 
 impl<P: ParameterSet> Keypair for SigningKey<P> {
-    type VerifyingKey = super::VerifyingKey<P>;
+    type VerifyingKey = super::verifying_key::VerifyingKey<P>;
 
     fn verifying_key(&self) -> Self::VerifyingKey {
         let sk = self.sk.as_slice();
@@ -130,5 +131,29 @@ impl<P: ParameterSet> SigningKey<P> {
         let s = super::Signature::<P> { sig };
 
         Ok(s)
+    }
+}
+
+impl<P: ParameterSet> From<SigningKey<P>> for GenericArray<u8, <P as crate::SigningKeyLen>::LEN> {
+    fn from(sk: SigningKey<P>) -> Self {
+        sk.sk
+    }
+}
+
+impl<P: ParameterSet> TryFrom<&[u8]> for SigningKey<P> {
+    type Error = transcoding::TranscodingError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != <<P as crate::SigningKeyLen>::LEN>::USIZE {
+            return Err(transcoding::TranscodingError {});
+        }
+        let arr = GenericArray::from_slice(bytes).clone();
+        Ok(SigningKey { sk: arr })
+    }
+}
+
+impl<P: ParameterSet> AsRef<[u8]> for SigningKey<P> {
+    fn as_ref(&self) -> &[u8] {
+        self.sk.as_ref()
     }
 }
