@@ -17,11 +17,23 @@ use utils::typenum::Unsigned;
 
 pub(super) const EMPTY_CTX: &[u8; 0] = &[];
 
-/// Holds the secret key material for a given parameter set.
-#[derive(Debug)]
+// Derive Debug only when building tests or with debug assertions (i.e., non-release)
+#[cfg_attr(any(test, debug_assertions), derive(Debug))]
 #[repr(transparent)]
+/// Holds the secret key material for a given parameter set.
 pub struct SigningKey<P: ParameterSet> {
     pub(super) sk: GenericArray<u8, <P as crate::SigningKeyLen>::LEN>,
+}
+
+// In release builds, provide a custom redacted Debug.
+#[cfg(not(any(test, debug_assertions)))]
+impl<P: ParameterSet> core::fmt::Debug for SigningKey<P> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // don’t leak key material in release
+        f.debug_struct("SigningKey")
+            .field("sk", &"<redacted>")
+            .finish()
+    }
 }
 
 /// For convenience, a `SigningKey<P>` can be used also as a
