@@ -6,28 +6,30 @@ The wrappers expose ergonomic Rust APIs and memory safety, modeled using
 
 [RustCrypto]: https://github.com/RustCrypto
 
-```ignore
-use slh_dsa::*;
-use signature::*;
+```rust
+use slhdsa_c_rs::*;
 
-let mut rng = rand::rng();
-
-// Generate a signing key using the SHAKE128f parameter set
-let sk = SigningKey::<Shake128f>::new(&mut rng);
-
-// Generate the corresponding public key
-let vk = sk.verifying_key();
+// Generate a keypair using the SLH-DSA-SHAKE-128f parameter set
+let (sk, vk) = keygen::<SLH_DSA_SHAKE_128f>().expect("Keypair generation failed");
 
 // Serialize the verifying key and distribute
-let vk_bytes = vk.to_bytes();
+let vk_bytes = vk.as_bytes().clone();
 
 // Sign a message
 let message = b"Hello world";
-let sig = sk.sign_with_rng(&mut rng, message); // .sign() can be used for deterministic signatures
+let sig = sk.sign(message);
+
+// Serialize the signature and distribute
+let sig_bytes = sig.as_bytes().clone();
 
 // Deserialize a verifying key
 let vk_deserialized = vk_bytes.try_into().unwrap();
 assert_eq!(vk, vk_deserialized);
 
-assert!(vk_deserialized.verify(message, &sig).is_ok())
+// Deserialize a signature
+let sig_deserialized = sig_bytes.try_into().unwrap();
+assert_eq!(sig, sig_deserialized);
+
+
+assert!(vk_deserialized.verify(message, &sig_deserialized).is_ok())
 ```
