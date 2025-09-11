@@ -139,6 +139,26 @@ pub trait ParameterSet:
         name
     }
 
+    /// Generates a new signing and verifying key pair for this parameter set.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`KeygenError`] if key generation fails due to internal errors.
+    ///
+    /// # Usage
+    ///
+    /// ```rust
+    /// use slhdsa_c_rs::*;
+    /// use SLH_DSA_SHAKE_128s as P;
+    /// let (private_key, public_key) = <P>::keygen().expect("Keygen failed");
+    ///
+    /// assert_eq!(private_key.as_bytes().len(), P::SIGNING_KEY_LEN);
+    /// assert_eq!(public_key.as_bytes().len(), P::VERIFYING_KEY_LEN);
+    /// ```
+    fn keygen() -> Result<(SigningKey<Self>, VerifyingKey<Self>), KeygenError> {
+        signing_key::keygen::<Self>()
+    }
+
     /// Associated OID with the Parameter as a `&str`
     const ALGORITHM_OID_STR: &'static str;
 
