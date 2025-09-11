@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "slhdsa-c-rs"
-version = "0.0.3"
+version = "0.0.4-dev"
 description = "FFI bindings for the slhdsa-c SLH-DSA implementation"
 license = "ISC OR MIT OR Apache-2.0"
 repository = "https://github.com/romen/slhdsa-c-rs"
