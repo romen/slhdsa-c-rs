@@ -1,3 +1,29 @@
+//! Utilities for transcoding between types and byte slices.
+//!
+//! This module provides traits and error types for converting types to and from byte slices,
+//! enabling generic and fallible parsing and serialization.
+//!
+//! # Traits
+//!
+//! - [`AsBytes`]: For types that can be represented as a byte slice. Blanket implementation for all types implementing `AsRef<[u8]>`.
+//! - [`FromBytes`]: For types that can be fallibly parsed from a byte slice. Blanket implementation for types implementing `TryFrom<&[u8]>`.
+//!
+//! # Error Types
+//!
+//! - [`TranscodingError`]: Generic error type for transcoding operations.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use slhdsa_c_rs::transcoding::{AsBytes, FromBytes};
+//!
+//! let bytes: &[u8] = &[1, 2, 3];
+//! let vec = Vec::<u8>::from_bytes(bytes).unwrap();
+//! assert_eq!(vec.as_bytes(), bytes);
+//! ```
+//! This module
+//!
+
 use core::convert::TryFrom;
 
 /// Error type for transcoding operations.

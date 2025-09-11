@@ -16,7 +16,8 @@ pub use signing_key::*;
 pub use verifying_key::*;
 
 pub(crate) mod utils;
-pub use utils::transcoding::*;
+pub use transcoding::*;
+pub use utils::transcoding;
 pub(crate) use utils::typenum;
 
 trait FFIParams {
