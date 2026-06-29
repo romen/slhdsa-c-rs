@@ -11,20 +11,20 @@ wrapper = ["signature", "generic-array", "rand"]
 default = ["wrapper"]
 
 [dependencies]
-generic-array = { version = "1.2.0", optional = true }
-rand = { version = "0.9.2", features = ["std_rng"], optional = true}
+generic-array = { version = "1.4.3", optional = true }
+rand = { version = "0.9.4", features = ["std_rng"], optional = true}
 signature = { version = "2.2.0", optional = true }
 
 [build-dependencies]
 bindgen = "0.72.1"
-cc = "1.2.35"
+cc = "1.2.65"
 glob = "0.3.3"
 
 [dev-dependencies]
-env_logger = "0.11.8"
-log = "0.4.28"
-anyhow = "1.0.99"
-rand = { version = "0.9.2", features = ["std_rng"] }
+env_logger = "0.11.11"
+log = "0.4.33"
+anyhow = "1.0.103"
+rand = { version = "0.9.4", features = ["std_rng"] }
 paste = "1.0.15"
 
 [workspace]
