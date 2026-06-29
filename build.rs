@@ -27,14 +27,28 @@ fn compile_c_sources() {
     let pattern = include_path.clone().join("*.c");
     let pattern = pattern.to_str().expect("Path not valid UTF-8");
 
-    for entry in glob(pattern).expect("Failed to read glob pattern") {
+    let matched = glob(pattern).expect("Failed to read glob pattern");
+    let mut count: usize = 0;
+    for entry in matched {
         match entry {
             Ok(path) => {
                 println!("cargo:rerun-if-changed={}", path.display());
                 build.file(path);
+                count += 1;
             }
-            Err(e) => eprintln!("Glob error: {:?}", e),
+            Err(e) => {
+                println!("cargo::error=Glob error: {:?}", e);
+                std::process::exit(1);
+            }
         }
+    }
+    if count == 0 {
+        let msg = format!(
+            "No source files in {}. (Check if submodules are initialized.)",
+            include_path.display()
+        );
+        println!("cargo::error={msg}");
+        std::process::exit(1);
     }
 
     build.compile("slhdsa-c"); // creates libslhdsa-c.a
