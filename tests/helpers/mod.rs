@@ -1,4 +1,4 @@
-use rand::{Rng, SeedableRng};
+use rand::RngExt;
 
 pub unsafe extern "C" fn randombytes(x: *mut u8, xlen: usize) -> ::core::ffi::c_int {
     const SUCCESS: ::core::ffi::c_int = 0;
@@ -10,7 +10,7 @@ pub unsafe extern "C" fn randombytes(x: *mut u8, xlen: usize) -> ::core::ffi::c_
         x
     };
 
-    let mut rng = rand::rngs::StdRng::from_os_rng();
+    let mut rng: rand::rngs::StdRng = rand::make_rng();
 
     rng.fill(x);
 
